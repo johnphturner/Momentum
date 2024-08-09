@@ -208,7 +208,7 @@ def sourcing_alphavantage_data(
             dataset.to_csv("test_API.csv")
             return df
 
-        df["ME- " + companies.iloc[i]] = dataset[kpi]
+        df[companies.iloc[i]] = dataset[kpi]
     return df
 
 
