@@ -151,18 +151,6 @@ def alphavantage_json(function,company,apikey):
     data = json.loads(elevations)
     return data
 
-'''
-
-def alphavantage_balance_sheet(data):
-    df = pd.json_normalize(data['quarterlyReports'])
-    report = pd.DataFrame()
-    report["Dates"] = df["fiscalDateEnding"]
-    report[company] = df["totalShareholderEquity"]
-    report.set_index("Dates",inplace=True)
-    return report
-    
-'''
-
 
 def sourcing_alphavantage_data(
         companies,
@@ -307,6 +295,16 @@ def month_year_to_eomonth(df_raw):
 
 # <editor-fold desc="Regression Functions">
 
+def normalise_df(df):
+    df_float = df.astype(float)
+    min_value = df_float.min().min()
+    max_value = df_float.max().max()
+    return (df_float - min_value).div(max_value-min_value)
 
+def normalise_column(df):
+    df_float = df.astype(float)
+    min_value = df_float.min()
+    max_value = df_float.max()
+    return (df_float - min_value).div(max_value-min_value)
 
 # <editor-fold>
