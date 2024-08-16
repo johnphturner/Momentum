@@ -1,4 +1,4 @@
-# First, let's import the necessary packages.
+#%% First, let's import the necessary packages.
 import pandas as pd
 import numpy as np
 import os
@@ -7,7 +7,7 @@ import time
 import Header
 premium_api = "8NIR58ZCJWT4MFNH"
 filepath = os.getcwd()
-#%% Now, we import the necessary data.
+#%% Now, we import the necessary data for the SmallCap model. 
 # This data comes from the Data_collection code.
 # the double "%" is a Spyder feature, that separates code into executable cells.
 
@@ -23,16 +23,20 @@ ME_clean = pd.read_csv(
     'C:/Users/jptth/PycharmProjects/Momentum/Data/Collection Code Output/AV-FTSE SmallCap ME.csv',
     index_col='EOMONTH'
     )
+# We can get a list of companies by taking the columns from one of these and cleaning:
+Companies = pd.DataFrame(ME_clean.columns.str.removeprefix('ME- '),columns= ['Company name'])
 # We only use dates that are in all of our datasets.
 SE_Dates = pd.DataFrame(SE_clean.index)
 RSI_Dates = pd.DataFrame(RSI_clean.index)
 ME_Dates = pd.DataFrame(ME_clean.index)
 Dates = pd.merge(SE_Dates, RSI_Dates, how='inner', on=['EOMONTH'])
 Dates = pd.merge(Dates, ME_Dates, how='inner', on=['EOMONTH'])
-
+Dates = Dates.reindex(index=Dates.index[::-1])
 
 #%% We aim to construct a for loop, across a range of dates.
 # For each date, the code will create a regression model of the previous 2 years, to determine which factors are significant.
-# 
 # For our loop, we drop the bottom 23 dates. This is because each regression model will work on the last 2 years.
 Executable_Dates = Dates[:-24]
+# It also helps to reorder the dates, from oldest to newest.
+Executable_Dates = Executable_Dates.reindex(index=Executable_Dates.index[::-1])
+

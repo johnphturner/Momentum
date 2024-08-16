@@ -6,7 +6,6 @@ from urllib.request import Request, urlopen
 import json
 import time
 import calendar
-
 # <editor-fold desc="Data Collection & Cleaning">
 
 def read_FAME_data(dataset_name,index=None):
@@ -89,6 +88,41 @@ def clean_SE_data(df_raw):
             "\n",
             "th GBP ",
             "GBP "
+            ],
+        value="",
+        regex=True,
+        inplace=True
+    )
+    # And return the index to the DataFrame:
+    df_dates.reset_index(inplace=True, drop=True)
+    df_transpose["Years"] = df_dates
+    df_transpose.set_index("Years", inplace=True)
+    return df_transpose.drop("index", axis=1)
+
+
+def clean_profit_data(df_raw):
+    '''
+    This function cleans the profit data from FAME and makes it into vertical variables by company
+    :param df_raw: should be taken from the "results" sheet of the FAME extract, with the index_col set as "Company name"
+    :return: a pandas DataFrame with vertical variables for Profit margin % by year
+    '''
+    df_raw = df_raw.drop(
+        labels=[
+            'Unnamed: 0',
+            'Ticker symbol'
+        ],
+        axis='columns',
+    )
+    df_transpose = df_raw.transpose()
+
+    df_transpose.reset_index(inplace=True)
+    # We remove the superfluous words from the index:
+    df_dates = pd.DataFrame(df_raw.columns)
+#    df_dates.drop(0, inplace=True)
+    df_dates.replace(
+        to_replace=[
+            "Profit Margin",
+            "\n",
             ],
         value="",
         regex=True,
@@ -306,5 +340,21 @@ def normalise_column(df):
     min_value = df_float.min()
     max_value = df_float.max()
     return (df_float - min_value).div(max_value-min_value)
+
+def company_dataset(company_name,
+                    dates,
+                    ME_clean,
+                    SE_clean,
+                    RSI_clean,
+                    Profit_clean
+                    ):
+    df = pd.DataFrame(index=dates['EOMONTH'])
+    first_date = dates.reset_index().at[0,'EOMONTH']
+    first_stock_price = ME_clean.at[first_date, 'ME- '+company_name]
+    df['ME'] = ME_clean['ME- '+company_name].astype(float) - first_stock_price
+    df['RSI'] = RSI_clean['RSI- '+company_name]
+    df['VAL'] = SE_clean['SE- '+company_name].div(ME_clean['ME- '+company_name])
+    df['GP'] = Profit_clean['Profit- '+company_name]
+    return df
 
 # <editor-fold>
