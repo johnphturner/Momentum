@@ -1,3 +1,4 @@
+#%% 1. This file is separated into cells so one can just run the imports and then the cell one wants to update.
 import os
 os.chdir(r'C:\Users\jptth\Documents\GitHub\Momentum')
 import pandas as pd
@@ -8,7 +9,7 @@ import Header
 premium_api = "8NIR58ZCJWT4MFNH"
 
 filepath = os.getcwd()
-#%% This file is separated into cells so one can just run the imports and then the cell one wants to update.
+#%% 2. Raw Data for FTSE SmallCap Collection
 
 # <editor-fold desc="Raw Data for FTSE SmallCap Collection">
 os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
@@ -19,9 +20,9 @@ SmallCap_df_raw = pd.read_excel(
 
 # We drop the private/ discontinued stocks:
 # "HOME REIT PLC","THE DIVERSE INCOME TRUST PLC","ABERFORTH SPLIT LEVEL INCOME TRUST PLC",
-# "HENDERSON EUROTRUST PLC", "ABRDN NEW DAWN INVESTMENT TRUST PLC"
+# "HENDERSON EUROTRUST PLC", "HENDERSON EUROPEAN TRUST PLC" "ABRDN NEW DAWN INVESTMENT TRUST PLC"
 SmallCap_df_raw.drop(
-    [46, 51, 60, 65, 76],
+    [46, 51, 59, 60, 65, 76, 101],
     inplace=True
     )
 SmallCap_df_raw.drop(
@@ -37,7 +38,7 @@ tickers = SmallCap_df_raw["Ticker symbol"]
 companies = SmallCap_df_raw["Company name"]
 
 # </editor-fold>
-#%%
+#%% 3. Small Cap Stock Prices
 
 # <editor-fold desc="Small Cap Stock Prices">
 os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
@@ -49,11 +50,12 @@ API = Header.sourcing_alphavantage_data(
     'TIME_SERIES_MONTHLY_ADJUSTED'
 )
 EOMONTH = Header.index_dates_to_end_of_month(API.set_index(API["timestamp"], drop=True))
+EOMONTH = EOMONTH.bfill().ffill()
 EOMONTH.to_csv("Collection Code Output/AV- FTSE SmallCap ME.csv")
 del API
 
 # </editor-fold>
-#%%
+#%% 4. Small Cap RSI
 
 # <editor-fold desc="Small Cap RSI">
 os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
@@ -63,7 +65,7 @@ API = API.fillna('50')
 API.to_csv("Collection Code Output/AV- FTSE SmallCap RSI.csv")
 del API
 # </editor-fold>
-#%%
+#%% 5. Small Cap Shareholder Equities
 
 # <editor-fold desc="Small Cap Shareholder Equities">
 os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
@@ -78,7 +80,9 @@ SmallCap_SE_raw.drop(
         "BLACKROCK FRONTIERS INVESTMENT TRUST PLC",
         "ABERFORTH SPLIT LEVEL INCOME TRUST PLC",
         "HENDERSON EUROTRUST PLC",
-        "ABRDN NEW DAWN INVESTMENT TRUST PLC"
+        "ABRDN NEW DAWN INVESTMENT TRUST PLC",
+        "HENDERSON EUROPEAN TRUST PLC",
+        "INVESCO GLOBAL EQUITY INCOME TRUST PLC"
     ],
     inplace=True
     )
@@ -98,11 +102,11 @@ month_df.drop(
     inplace=True
 )
 number_month_df = Header.month_year_to_eomonth(month_df)
-number_month_df = number_month_df.replace(to_replace='n.a.', value=np.nan).bfill().fillna('0')
+number_month_df = number_month_df.replace(to_replace='n.a.', value=np.nan).bfill().ffill()
 number_month_df.add_prefix('SE- ', axis=1).to_csv("Collection Code Output/FTSE SmallCap SE Clean.csv")
-del(SmallCap_SE_raw, clean_df, month_df, number_month_df)
+del(SmallCap_SE_raw, clean_df, month_df)
 # </editor-fold>
-#%%
+#%% 6. Small Cap Profit
 
 # <editor-fold desc="Small Cap Profit">
 os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
@@ -117,7 +121,9 @@ SmallCap_profit_raw.drop(
         "BLACKROCK FRONTIERS INVESTMENT TRUST PLC",
         "ABERFORTH SPLIT LEVEL INCOME TRUST PLC",
         "HENDERSON EUROTRUST PLC",
-        "ABRDN NEW DAWN INVESTMENT TRUST PLC"
+        "ABRDN NEW DAWN INVESTMENT TRUST PLC",
+        "HENDERSON EUROPEAN TRUST PLC",
+        "INVESCO GLOBAL EQUITY INCOME TRUST PLC"
     ],
     inplace=True
     )
@@ -141,10 +147,45 @@ number_month_df = number_month_df.replace(to_replace=['n.a.', 'n.s.'], value=np.
 number_month_df.add_prefix('Profit- ', axis=1).to_csv("Collection Code Output/FTSE SmallCap Profit Clean.csv")
 del(SmallCap_profit_raw, clean_df, month_df, number_month_df)
 # </editor-fold>
-#%%
+#%% 7. We calculate the beta from the stock price.
+
+# <editor-fold desc="SmallCap Beta">
+os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
+first_date = EOMONTH.index[-1]
+Returns = pd.DataFrame(index=EOMONTH.index)
+Beta = pd.DataFrame(index=EOMONTH.index)
+Returns['Revenue- Total'] = EOMONTH.sum(axis=1)
+first_total_price = Returns.at[first_date,'Revenue- Total']
+Returns['Beta- Total'] = (Returns['Revenue- Total'] - first_total_price)/first_total_price
+dates = pd.DataFrame(EOMONTH.index)
+for i in EOMONTH.columns:
+    first_price = EOMONTH.at[first_date,i]
+    Returns[i] = (EOMONTH[i]-first_price)/first_price
+for i in EOMONTH.columns:
+    for a in dates[:-22].index:
+        end_date = dates.at[a,'EOMONTH']
+        test_range = Returns[a:a+23]
+        if test_range[i].var() == 0:
+            Beta.loc[end_date,'Beta- '+i] = 0
+        else: 
+            Beta.loc[end_date,'Beta- '+i] = (test_range.cov().at['Beta- Total',i])/(test_range[i].var())
+    for a in dates[-22:-1].index:
+        end_date = dates.at[a,'EOMONTH']   
+        test_range = Returns[a:]
+        if test_range[i].var() == 0:
+            Beta.loc[end_date,'Beta- '+i] = 0
+        else: 
+            Beta.loc[end_date,'Beta- '+i] = (test_range.cov().at['Beta- Total',i])/(test_range[i].var())
+    end_date = dates.at[len(dates)-1,'EOMONTH']
+    Beta.loc[end_date,'Beta- '+i] = 0
+Beta.to_csv('Collection Code Output/FTSE SmallCap Beta.csv')
+del(EOMONTH, Beta, Returns, first_date, first_price, first_total_price, test_range)
+# </editor-fold>
+
+#%% 8. SmallCap data collection has finished. We clear the variables for the FTSE 100:
 
 del(companies, tickers, SmallCap_df_raw)
-#%%
+#%% 9. Raw Data for FTSE 100 Collection
 
 # <editor-fold desc="Raw Data for FTSE 100 Collection">
 os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
@@ -171,7 +212,7 @@ tickers = FTSE_df_raw["Ticker symbol"]
 companies = FTSE_df_raw["Company name"]
 
 # </editor-fold>
-#%%
+#%% 10. Large Cap Stock Prices
 
 # <editor-fold desc="Large Cap Stock Prices">
 os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
@@ -183,11 +224,12 @@ API = Header.sourcing_alphavantage_data(
     'TIME_SERIES_MONTHLY_ADJUSTED'
 )
 EOMONTH = Header.index_dates_to_end_of_month(API.set_index(API["timestamp"], drop=True))
+EOMONTH = EOMONTH.bfill().ffill()
 EOMONTH.to_csv("Collection Code Output/AV- FTSE 100 ME.csv")
-del(API, EOMONTH)
+del(API)
 
 # </editor-fold>
-#%%
+#%% 11. Large Cap RSI
 
 # <editor-fold desc="Large Cap RSI">
 
@@ -200,9 +242,9 @@ API = Header.iterating_through_RSI(
 API = API.bfill()
 API = API.fillna('50')
 API.to_csv("Collection Code Output/AV- FTSE 100 RSI.csv")
-
+del(API)
 # </editor-fold>
-#%%
+#%% 12. Large Cap Shareholder Equities
 
 # <editor-fold desc="Large Cap Shareholder Equities">
 
@@ -236,7 +278,7 @@ number_month_df.add_prefix('SE- ', axis=1).to_csv("Collection Code Output/FTSE 1
 number_month_df = number_month_df.replace(to_replace=['n.a.', 'n.s.'], value=np.nan).bfill().fillna('0')
 del(FTSE_SE_raw, clean_df, month_df, number_month_df)
 # </editor-fold>
-#%%
+#%% 13. Large Cap Profit
 
 # <editor-fold desc="Large Cap Profit">
 os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
@@ -269,6 +311,45 @@ number_month_df = number_month_df.replace(to_replace='n.a.', value=np.nan).bfill
 number_month_df.add_prefix('Profit- ', axis=1).to_csv("Collection Code Output/FTSE 100 Profit Clean.csv")
 del(FTSE_profit_raw, clean_df, month_df, number_month_df)
 # </editor-fold>
-#%%
+#%% 14. We calculate the beta from the stock price.
+
+# <editor-fold desc="Large Cap Beta">
+os.chdir(r'C:\Users\jptth\Documents\GitHub Data')
+first_date = EOMONTH.index[-1]
+Returns = pd.DataFrame(index=EOMONTH.index)
+Beta = pd.DataFrame(index=EOMONTH.index)
+Returns['Revenue- Total'] = EOMONTH.sum(axis=1)
+first_total_price = Returns.at[first_date,'Revenue- Total']
+Returns['Beta- Total'] = (Returns['Revenue- Total'] - first_total_price)/first_total_price
+dates = pd.DataFrame(EOMONTH.index)
+for i in EOMONTH.columns:
+    first_price = EOMONTH.at[first_date,i]
+    Returns[i] = (EOMONTH[i]-first_price)/first_price
+for i in EOMONTH.columns:
+    for a in dates[:-22].index:
+        end_date = dates.at[a,'EOMONTH']
+        test_range = Returns[a:a+23]
+        if test_range[i].var() == 0:
+            Beta.loc[end_date,'Beta- '+i] = 0
+        else: 
+            Beta.loc[end_date,'Beta- '+i] = (test_range.cov().at['Beta- Total',i])/(test_range[i].var())
+    for a in dates[-22:-1].index:
+        end_date = dates.at[a,'EOMONTH']   
+        test_range = Returns[a:]
+        if test_range[i].var() == 0:
+            Beta.loc[end_date,'Beta- '+i] = 0
+        else: 
+            Beta.loc[end_date,'Beta- '+i] = (test_range.cov().at['Beta- Total',i])/(test_range[i].var())
+    end_date = dates.at[len(dates)-1,'EOMONTH']
+    Beta.loc[end_date,'Beta- '+i] = 0
+Beta.to_csv('Collection Code Output/FTSE 100 Beta.csv')
+del(EOMONTH, Beta, Returns, first_date, first_price, first_total_price, test_range)
+# </editor-fold>
+#%% 15. Deleting the remaining variables. A sound signals the code is finished running.
 
 del(companies, tickers, FTSE_df_raw)
+
+import winsound
+duration = 1000  # milliseconds
+freq = 440  # Hz
+winsound.Beep(freq, duration)

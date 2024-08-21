@@ -6,7 +6,7 @@ from urllib.request import Request, urlopen
 import json
 import time
 import calendar
-# <editor-fold desc="Data Collection & Cleaning">
+#%% <editor-fold desc="Data Collection & Cleaning">
 
 def read_FAME_data(dataset_name,index=None):
     df = pd.read_excel('Data/' + dataset_name + '.xlsx', sheet_name='Results', index_col=index)
@@ -327,7 +327,7 @@ def month_year_to_eomonth(df_raw):
 
 # </editor-fold>
 
-# <editor-fold desc="Regression Functions">
+#%% <editor-fold desc="Regression Functions">
 
 def normalise_df(df):
     df_float = df.astype(float)
@@ -335,8 +335,10 @@ def normalise_df(df):
     max_value = df_float.max().max()
     return (df_float - min_value).div(max_value-min_value)
 
-def normalise_column(df):
-    df_float = df.astype(float)
+def normalise_column(df,flt=False):
+    if float == False:
+        df_float = df.astype(float)
+    else: df_float = df
     min_value = df_float.min()
     max_value = df_float.max()
     return (df_float - min_value).div(max_value-min_value)
@@ -346,15 +348,38 @@ def company_dataset(company_name,
                     ME_clean,
                     SE_clean,
                     RSI_clean,
-                    Profit_clean
+                    Profit_clean,
+                    Beta_clean
                     ):
     df = pd.DataFrame(index=dates['EOMONTH'])
     first_date = dates.reset_index().at[0,'EOMONTH']
-    first_stock_price = ME_clean.at[first_date, 'ME- '+company_name]
-    df['ME'] = ME_clean['ME- '+company_name].astype(float) - first_stock_price
-    df['RSI'] = RSI_clean['RSI- '+company_name]
-    df['VAL'] = SE_clean['SE- '+company_name].div(ME_clean['ME- '+company_name])
-    df['GP'] = Profit_clean['Profit- '+company_name]
+    first_stock_price = ME_clean.at[first_date, company_name]
+    df['ME'] = ME_clean[company_name].astype(float) - first_stock_price
+    df['RSI'] = RSI_clean[company_name]
+    df['VAL'] = SE_clean[company_name].div(ME_clean[company_name])
+    df['GP'] = Profit_clean[company_name]
+    df['Beta'] = Beta_clean[company_name]
     return df
 
+def snapshot(date, companies, ME, SE, RSI, Profit, Beta):
+    df = pd.DataFrame(index=companies['Company name'], columns= ['ME', 'RSI', 'SE-To-Drop', 'VAL', 'GP', 'Beta'])
+    df['ME'] = ME.loc[date]
+    RSI_Copy = RSI
+    RSI_Copy.columns = RSI_Copy.columns.str.replace('RSI- ','')
+    df['RSI'] = RSI_Copy.loc[date]
+    SE_Copy = SE
+    SE_Copy.columns = SE_Copy.columns.str.replace('SE- ','')
+    df['SE-To-Drop'] = SE_Copy.loc[date]
+    df['VAL'] = normalise_column(df['SE-To-Drop'].div(df['ME']))
+    df.drop('SE-To-Drop',axis=1,inplace=True)
+    Profit_Copy = Profit
+    Profit_Copy.columns = Profit_Copy.columns.str.replace('Profit- ','')
+    df['GP'] = Profit_Copy.loc[date]
+    Beta_Copy = Beta
+    Beta_Copy.columns = Beta_Copy.columns.str.replace('Beta- ','')
+    df['Beta'] = Beta_Copy.loc[date]
+    return df
+
+def test():
+    print('SUCCESS')
 # <editor-fold>
