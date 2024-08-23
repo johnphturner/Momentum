@@ -89,3 +89,27 @@ def Dataset(Companies, chosen_dates, ME, SE, RSI, Profit, Beta):
         Company_df = Company_df.add_prefix(company_name+' ',axis=0)
         Dataset = pd.concat([Dataset, Company_df])
         return Dataset
+
+#%% Experimenting with inputs
+
+x = input('Gimme a bullet to bite on: ')
+try:
+    int_x = int(x)
+except ValueError as verr:
+  x = input('Gimme a bullet to bite on: ')
+except Exception as ex:
+  x = input('Something to chew')
+
+#%% Experimenting with KPI:
+    
+# Let's make a matrix that shows what buying a stock for £1 and holding for n months looks like.
+hold_for=3
+# First we reorder.
+ME_ordered = ME_clean.loc[Dates['EOMONTH'].loc[hold_for:]]
+# Now, we make a matrix shifted n-dates into the future, for the returns.
+ME_shifted = ME_ordered.shift(-hold_for)
+# This gives us a payoff matrix:
+stock_movement = (ME_shifted - ME_ordered)
+# But we need to divide through by the initial stock price, so it's just a £1 bet.
+Payoff = stock_movement.div(ME_ordered)
+

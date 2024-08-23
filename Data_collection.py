@@ -50,7 +50,7 @@ API = Header.sourcing_alphavantage_data(
     'TIME_SERIES_MONTHLY_ADJUSTED'
 )
 EOMONTH = Header.index_dates_to_end_of_month(API.set_index(API["timestamp"], drop=True))
-EOMONTH = EOMONTH.bfill().ffill()
+EOMONTH = EOMONTH.replace(0,np.nan).bfill().ffill().fillna(1)
 EOMONTH.to_csv("Collection Code Output/AV- FTSE SmallCap ME.csv")
 del API
 
@@ -224,7 +224,7 @@ API = Header.sourcing_alphavantage_data(
     'TIME_SERIES_MONTHLY_ADJUSTED'
 )
 EOMONTH = Header.index_dates_to_end_of_month(API.set_index(API["timestamp"], drop=True))
-EOMONTH = EOMONTH.bfill().ffill()
+EOMONTH = EOMONTH.replace(0,np.nan).bfill().ffill().fillna(1)
 EOMONTH.to_csv("Collection Code Output/AV- FTSE 100 ME.csv")
 del(API)
 
@@ -274,8 +274,8 @@ month_df.drop(
     inplace=True
 )
 number_month_df = Header.month_year_to_eomonth(month_df)
-number_month_df.add_prefix('SE- ', axis=1).to_csv("Collection Code Output/FTSE 100 SE Clean.csv")
 number_month_df = number_month_df.replace(to_replace=['n.a.', 'n.s.'], value=np.nan).bfill().fillna('0')
+number_month_df.add_prefix('SE- ', axis=1).to_csv("Collection Code Output/FTSE 100 SE Clean.csv")
 del(FTSE_SE_raw, clean_df, month_df, number_month_df)
 # </editor-fold>
 #%% 13. Large Cap Profit
@@ -307,7 +307,7 @@ month_df.drop(
     inplace=True
 )
 number_month_df = Header.month_year_to_eomonth(month_df)
-number_month_df = number_month_df.replace(to_replace='n.a.', value=np.nan).bfill().fillna('0')
+number_month_df = number_month_df.replace(to_replace=['n.a.', 'n.s.'], value=np.nan).bfill().fillna('0')
 number_month_df.add_prefix('Profit- ', axis=1).to_csv("Collection Code Output/FTSE 100 Profit Clean.csv")
 del(FTSE_profit_raw, clean_df, month_df, number_month_df)
 # </editor-fold>

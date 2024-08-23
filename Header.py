@@ -6,6 +6,25 @@ from urllib.request import Request, urlopen
 import json
 import time
 import calendar
+#%% Libraries
+
+monthly_df = pd.DataFrame(
+    [
+     ["January", 1],
+     ["February", 2],
+     ["March", 3],
+     ["April", 4],
+     ["May", 5],
+     ["June", 6],
+     ["July", 7],
+     ["August", 8],
+     ["September", 9],
+     ["October", 10],
+     ["November", 11],
+     ["December", 12],
+     ],
+    columns=["Word", "Number"]
+    )
 #%% <editor-fold desc="Data Collection & Cleaning">
 
 def read_FAME_data(dataset_name,index=None):
@@ -329,11 +348,13 @@ def month_year_to_eomonth(df_raw):
 
 #%% <editor-fold desc="Regression Functions">
 
+
 def normalise_df(df):
     df_float = df.astype(float)
     min_value = df_float.min().min()
     max_value = df_float.max().max()
     return (df_float - min_value).div(max_value-min_value)
+
 
 def normalise_column(df,flt=False):
     if float == False:
@@ -343,23 +364,40 @@ def normalise_column(df,flt=False):
     max_value = df_float.max()
     return (df_float - min_value).div(max_value-min_value)
 
+
+def payoff_matrix(ME, hold_for, chosen_dates, perfect_information=True):
+    if perfect_information == True:
+        cost_adjustment = 0
+        revenue_adjustment = -hold_for
+    else:
+        cost_adjustment = hold_for
+        revenue_adjustment = 0
+    Cost = ME.shift(cost_adjustment).loc[chosen_dates]
+    Revenue = ME.shift(revenue_adjustment).loc[chosen_dates]
+    Payoff = Revenue - Cost
+    return Payoff
+
 def company_dataset(company_name,
                     dates,
                     ME_clean,
                     SE_clean,
                     RSI_clean,
                     Profit_clean,
-                    Beta_clean
+                    Beta_clean,
+                    hold_for
                     ):
     df = pd.DataFrame(index=dates['EOMONTH'])
     first_date = dates.reset_index().at[0,'EOMONTH']
     first_stock_price = ME_clean.at[first_date, company_name]
-    df['ME'] = ME_clean[company_name].astype(float) - first_stock_price
-    df['RSI'] = RSI_clean[company_name]
-    df['VAL'] = SE_clean[company_name].div(ME_clean[company_name])
-    df['GP'] = Profit_clean[company_name]
-    df['Beta'] = Beta_clean[company_name]
-    return df
+    df['Returns'] = payoff_matrix(ME_clean, hold_for, df.index, perfect_information=False)[company_name]
+    df['ME'] = ME_clean[company_name].shift(-hold_for).astype(float) - first_stock_price
+    df['RSI'] = RSI_clean[company_name].shift(-hold_for)
+    df['VAL'] = SE_clean[company_name].shift(-hold_for).div(ME_clean[company_name])
+    df['GP'] = Profit_clean[company_name].shift(-hold_for)
+    df['Beta'] = Beta_clean[company_name].shift(-hold_for)
+    df['LAG'] = ME_clean[company_name].astype(float).shift(-hold_for-1, fill_value=ME_clean.at[first_date,company_name])
+    return df.drop('ME', axis=1)
+
 
 def snapshot(date, companies, ME, SE, RSI, Profit, Beta):
     df = pd.DataFrame(index=companies['Company name'], columns= ['ME', 'RSI', 'SE-To-Drop', 'VAL', 'GP', 'Beta'])
@@ -378,8 +416,18 @@ def snapshot(date, companies, ME, SE, RSI, Profit, Beta):
     Beta_Copy = Beta
     Beta_Copy.columns = Beta_Copy.columns.str.replace('Beta- ','')
     df['Beta'] = Beta_Copy.loc[date]
+    df['LAG'] = ME.shift(-1).loc[date]
     return df
+
+def row_by_row_average(df):
+    test = pd.DataFrame(index=df.index,columns=['test'])
+    for i in df.index:
+        test.at[i,'test'] = df.loc[i].mean()
+    return test
+
 
 def test():
     print('SUCCESS')
+    
+    
 # <editor-fold>
