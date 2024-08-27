@@ -15,6 +15,7 @@ premium_api = "8NIR58ZCJWT4MFNH"
 hold_for = int(input("How long should we hold for? integer prompt please: "))
 
 # %% 2a. Run this cell for the Data. You will be prompted for which data you want to use:
+os.chdir(filepath)
 os.chdir("../../GitHub Data")
 size = input('Type "Large" to run the FTSE 100, and "Small" to run the FTSE SmallCap: ')
 while size not in ["Large", "Small"]:
@@ -79,7 +80,7 @@ ME_ordered = ME_clean.loc[Dates["EOMONTH"].loc[hold_for:]]
 ME_shifted = ME_ordered.shift(-hold_for)
 # This gives us a payoff matrix:
 stock_movement = ME_shifted - ME_ordered
-# But we need to divide through by the initial stock price, so it's just a £1 bet.
+# But we need to divide through by the initial stock price, so it's just a $1 bet.
 Payoff = stock_movement.div(ME_ordered)
 del (ME_ordered, ME_shifted, stock_movement)
 

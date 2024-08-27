@@ -13,8 +13,9 @@ premium_api = "8NIR58ZCJWT4MFNH"
 filepath = os.getcwd()
 # %% 2. Raw Data for FTSE SmallCap Collection
 
-# <editor-fold desc="Raw Data for FTSE SmallCap Collection">
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
+# Tickers- table created on FAME by filtering for stock data>FTSE indexes>FTSE SmallCap, stock data>listed/unlisted>listed.
+# I then added the column identifiers>ticker symbol
 SmallCap_df_raw = pd.read_excel(
     "FTSE SmallCap Tickers.xlsx",
     sheet_name="Results",
@@ -29,10 +30,8 @@ SmallCap_df_raw.reset_index(drop=True, inplace=True)
 tickers = SmallCap_df_raw["Ticker symbol"]
 companies = SmallCap_df_raw["Company name"]
 
-# </editor-fold>
 # %% 3. Small Cap Stock Prices
 
-# <editor-fold desc="Small Cap Stock Prices">
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 API = Header.sourcing_alphavantage_data(
     companies, tickers, premium_api, "close", "TIME_SERIES_MONTHLY_ADJUSTED"
@@ -42,20 +41,18 @@ EOMONTH = EOMONTH.replace(0, np.nan).bfill().ffill().fillna(1)
 EOMONTH.to_csv("Collection Code Output/AV- FTSE SmallCap ME.csv")
 del API
 
-# </editor-fold>
 # %% 4. Small Cap RSI
 
-# <editor-fold desc="Small Cap RSI">
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 API = Header.iterating_through_RSI(companies, tickers, premium_api)
 API = API.bfill()
 API = API.fillna("50")
 API.to_csv("Collection Code Output/AV- FTSE SmallCap RSI.csv")
 del API
-# </editor-fold>
 # %% 5. Small Cap Shareholder Equities
 
-# <editor-fold desc="Small Cap Shareholder Equities">
+# table created on FAME by filtering for stock data>FTSE indexes>FTSE SmallCap, stock data>listed/unlisted>listed.
+# I then added the columns financials and ratios>balance sheet>shareholder funds.
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 SmallCap_SE_raw = pd.read_excel(
     "FTSE Small Cap SE.xlsx", sheet_name="Results", index_col="Company name"
@@ -95,10 +92,11 @@ number_month_df.add_prefix("SE- ", axis=1).to_csv(
     "Collection Code Output/FTSE SmallCap SE Clean.csv"
 )
 del (SmallCap_SE_raw, clean_df, month_df)
-# </editor-fold>
+
 # %% 6. Small Cap Profit
 
-# <editor-fold desc="Small Cap Profit">
+# table created on FAME by filtering for stock data>FTSE indexes>FTSE SmallCap, stock data>listed/unlisted>listed.
+# I then added the columns financials and ratios>balance sheet>profit and loss account.
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 SmallCap_profit_raw = pd.read_excel(
     "FTSE SmallCap Profit.xlsx", sheet_name="Results", index_col="Company name"
@@ -140,10 +138,9 @@ number_month_df.add_prefix("Profit- ", axis=1).to_csv(
     "Collection Code Output/FTSE SmallCap Profit Clean.csv"
 )
 del (SmallCap_profit_raw, clean_df, month_df, number_month_df)
-# </editor-fold>
+
 # %% 7. We calculate the beta from the stock price.
 
-# <editor-fold desc="SmallCap Beta">
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 first_date = EOMONTH.index[-1]
 Returns = pd.DataFrame(index=EOMONTH.index)
@@ -180,14 +177,14 @@ for i in EOMONTH.columns:
     Beta.loc[end_date, "Beta- " + i] = 0
 Beta.to_csv("Collection Code Output/FTSE SmallCap Beta.csv")
 del (EOMONTH, Beta, Returns, first_date, first_price, first_total_price, test_range)
-# </editor-fold>
 
 # %% 8. SmallCap data collection has finished. We clear the variables for the FTSE 100:
 
 del (companies, tickers, SmallCap_df_raw)
 # %% 9. Raw Data for FTSE 100 Collection
 
-# <editor-fold desc="Raw Data for FTSE 100 Collection">
+# table created on FAME by filtering for stock data>FTSE indexes>FTSE 100, stock data>listed/unlisted>listed.
+# I then added the column identifiers>ticker symbol.
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 FTSE_df_raw = pd.read_excel(
     "FTSE 100 Tickers.xlsx",
@@ -201,10 +198,8 @@ FTSE_df_raw.reset_index(drop=True, inplace=True)
 tickers = FTSE_df_raw["Ticker symbol"]
 companies = FTSE_df_raw["Company name"]
 
-# </editor-fold>
 # %% 10. Large Cap Stock Prices
 
-# <editor-fold desc="Large Cap Stock Prices">
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 API = Header.sourcing_alphavantage_data(
     companies, tickers, premium_api, "close", "TIME_SERIES_MONTHLY_ADJUSTED"
@@ -214,10 +209,7 @@ EOMONTH = EOMONTH.replace(0, np.nan).bfill().ffill().fillna(1)
 EOMONTH.to_csv("Collection Code Output/AV- FTSE 100 ME.csv")
 del API
 
-# </editor-fold>
 # %% 11. Large Cap RSI
-
-# <editor-fold desc="Large Cap RSI">
 
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 API = Header.iterating_through_RSI(companies, tickers, premium_api)
@@ -225,11 +217,11 @@ API = API.bfill()
 API = API.fillna("50")
 API.to_csv("Collection Code Output/AV- FTSE 100 RSI.csv")
 del API
-# </editor-fold>
+
 # %% 12. Large Cap Shareholder Equities
 
-# <editor-fold desc="Large Cap Shareholder Equities">
-
+# table created on FAME by filtering for stock data>FTSE indexes>FTSE 100, stock data>listed/unlisted>listed.
+# I then added the columns financials and ratios>balance sheet>shareholder funds.
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 FTSE_SE_raw = pd.read_excel(
     "FTSE 100 SE.xlsx", sheet_name="Results", index_col="Company name"
@@ -260,10 +252,11 @@ number_month_df.add_prefix("SE- ", axis=1).to_csv(
     "Collection Code Output/FTSE 100 SE Clean.csv"
 )
 del (FTSE_SE_raw, clean_df, month_df, number_month_df)
-# </editor-fold>
+
 # %% 13. Large Cap Profit
 
-# <editor-fold desc="Large Cap Profit">
+# table created on FAME by filtering for stock data>FTSE indexes>FTSE 100, stock data>listed/unlisted>listed.
+# I then added the columns financials and ratios>balance sheet>profit and loss account.
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 FTSE_profit_raw = pd.read_excel(
     "FTSE 100 Profit.xlsx", sheet_name="Results", index_col="Company name"
@@ -294,10 +287,9 @@ number_month_df.add_prefix("Profit- ", axis=1).to_csv(
     "Collection Code Output/FTSE 100 Profit Clean.csv"
 )
 del (FTSE_profit_raw, clean_df, month_df, number_month_df)
-# </editor-fold>
+
 # %% 14. We calculate the beta from the stock price.
 
-# <editor-fold desc="Large Cap Beta">
 os.chdir(r"C:\Users\jptth\Documents\GitHub Data")
 first_date = EOMONTH.index[-1]
 Returns = pd.DataFrame(index=EOMONTH.index)
@@ -334,7 +326,7 @@ for i in EOMONTH.columns:
     Beta.loc[end_date, "Beta- " + i] = 0
 Beta.to_csv("Collection Code Output/FTSE 100 Beta.csv")
 del (EOMONTH, Beta, Returns, first_date, first_price, first_total_price, test_range)
-# </editor-fold>
+
 # %% 15. Deleting the remaining variables. A sound signals the code is finished running.
 
 del (companies, tickers, FTSE_df_raw)
